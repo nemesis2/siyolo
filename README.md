@@ -55,7 +55,7 @@ pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy==1.24.4 ultralyt
 fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
 ```
 
-### Create System User (Linux Only)
+### Create System User
 
 ```
 sudo useradd -r siyolo
@@ -114,7 +114,7 @@ sudo systemctl start siyolo
 sudo systemctl status siyolo
 ```
 
-### Testing the Server (Linux & Windows)
+### Testing the Server
 
 Activate venv and run manually first:
 
@@ -122,30 +122,21 @@ Activate venv and run manually first:
 source /opt/siyolo/venv/bin/activate  # Linux
 python3.10 main.py
 ```
-Expected output:
+Expected output should be similar to:
 
-Starting Simple YOLO server v1.0, listening on 0.0.0.0:32168
-
+```
+Starting Simple YOLO server v1.0, listening on 127.0.0.1:32168
 Torch version: 1.13.1+cu117 (CUDA: 11.7)
-
 Running model yolov8x.pt on CUDA (NVIDIA GeForce GTX 970)
+```
 
+### Notes & Tips
 
-    • Use curl or your client to POST images for inference.
-    • Supports multipart/form-data and application/json (base64).
-    • Honor min_confidence from client requests.
-
-
-Notes & Tips
-    • Models: Place YOLO .pt files in /opt/siyolo/models/.
-    
-    • CPU Display: Falls back to system CPU if no CUDA.
-    
-    • FP16: Use half=True on CUDA for lower VRAM usage.
-    
-    • Threading: OMP_NUM_THREADS=1 is safe for dual-core; increase for multi-core CPUs.
-    
-    • VRAM: Large models (yolov8x-seg.pt) may require >3–4GB. Consider smaller models (yolov8n, yolov8m) for 4GB GPUs.
-    
-    • Debug Logs: Controlled via YOLO_VERBOSE=True/False.
+* Use curl or your client to POST images for inference.
+* Supports multipart/form-data and application/json (base64).
+* Models: Place YOLO .pt files in /opt/siyolo/models/; if missing it will attempt to automatically down the model.
+* CPU Display: Falls back to system CPU if no CUDA.
+* FP16: Use half=True on CUDA for lower VRAM usage.
+* VRAM: Large models (yolov8x-seg.pt) may require >3–4GB. Consider smaller models (yolov8n, yolov8m) for 4GB GPUs.
+* Debug Logs: Controlled via YOLO_VERBOSE=True/False.
 

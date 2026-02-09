@@ -127,7 +127,9 @@ Torch version: 1.13.1+cu117 (CUDA: 11.7)
 Running model yolov8x.pt on CUDA (NVIDIA GeForce GTX 970)
 ```
 
-### Verify inference
+### Verify Inferencing
+
+Test image: https://deepstack.readthedocs.io/en/latest/_images/family-and-dog.jpg
 
 ```
 curl -s -X POST -F 'image=@family-and-dog.jpg' 'http://127.0.0.1:32168/v1/vision/detection' | jq '.'
@@ -188,7 +190,7 @@ sudo systemctl status siyolo
 * Supports multipart/form-data and application/json (base64).
 * Models: Place YOLO .pt files in /opt/siyolo/models/; if missing it will attempt to automatically down the model.
 * CPU Display: Falls back to system CPU if no CUDA.
-* FP16: Use half=True on CUDA for lower VRAM usage.
+* FP16: Use half=True on CUDA for lower VRAM usage. (Keep FP32 for Maxwell cards)
 * VRAM: Large models (yolov8x-seg.pt) may require >3–4GB. Consider smaller models (yolov8n, yolov8m) for 4GB GPUs.
-* Debug Logs: Controlled via YOLO_VERBOSE=True/False.
+* Additional debugging controlled via YOLO_VERBOSE=True/False.
 

@@ -12,6 +12,13 @@ Made as a drop-in replacement for Deepstacks or Codeproject.AI inference servers
 
 ## Linux Installation & Setup Guide
 
+### Install from git
+
+```
+cd /opt
+sudo git clone https://github.com/nemesis2/siyolo.git
+```
+
 ### Directory Setup
 
 Create the server and model directories:
@@ -104,22 +111,12 @@ ProtectHome=true
 WantedBy=multi-user.target
 ```
 
-### Enable and start:
-
-```
-sudo ln -s /opt/siyolo/siyolo.service /etc/systemd/system/siyolo.service
-sudo systemctl daemon-reload
-sudo systemctl enable siyolo
-sudo systemctl start siyolo
-sudo systemctl status siyolo
-```
-
 ### Testing the Server
 
 Activate venv and run manually first:
 
 ```
-source /opt/siyolo/venv/bin/activate  # Linux
+source /opt/siyolo/venv/bin/activate 
 python3.10 main.py
 ```
 Expected output should be similar to:
@@ -130,7 +127,62 @@ Torch version: 1.13.1+cu117 (CUDA: 11.7)
 Running model yolov8x.pt on CUDA (NVIDIA GeForce GTX 970)
 ```
 
-### Notes & Tips
+### Verify inference
+
+```
+curl -s -X POST -F 'image=@family-and-dog.jpg' 'http://127.0.0.1:32168/v1/vision/detection' | jq '.'
+```
+
+Should return something like:
+ 
+```
+{
+  "success": true,
+  "predictions": [
+    {
+      "confidence": 0.9401,
+      "label": "person",
+      "x_min": 294,
+      "y_min": 85,
+      "x_max": 442,
+      "y_max": 519
+    },
+    {
+      "confidence": 0.9371,
+      "label": "dog",
+      "x_min": 650,
+      "y_min": 344,
+      "x_max": 793,
+      "y_max": 540
+    },
+    {
+      "confidence": 0.9249,
+      "label": "person",
+      "x_min": 443,
+      "y_min": 113,
+      "x_max": 601,
+      "y_max": 523
+    }
+  ],
+  "count": 3,
+  "inferenceMs": 74
+}
+```
+
+
+### Enable and start:
+
+```
+sudo ln -s /opt/siyolo/siyolo.service /etc/systemd/system/siyolo.service
+sudo systemctl daemon-reload
+sudo systemctl enable siyolo
+sudo systemctl start siyolo
+sudo systemctl status siyolo
+```
+
+---
+
+## Notes & Tips
 
 * Use curl or your client to POST images for inference.
 * Supports multipart/form-data and application/json (base64).

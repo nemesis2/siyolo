@@ -137,7 +137,7 @@ curl -s -X POST -F 'image=@family-and-dog.jpg' 'http://127.0.0.1:32168/v1/vision
 
 Should return something like:
  
-```
+```jsonc
 {
   "success": true,
   "predictions": [
@@ -188,7 +188,7 @@ sudo systemctl status siyolo
 
 * Use curl or your client to POST images for inference.
 * Supports multipart/form-data and application/json (base64).
-* Models: Place YOLO .pt files in /opt/siyolo/models/; if missing it will attempt to automatically down the model.
+* Models: Place YOLO .pt files in /opt/siyolo/models/; if missing it will attempt to automatically download the model.
 * CPU Display: Falls back to system CPU if no CUDA.
 * FP16: Use half=True on CUDA for lower VRAM usage. (Keep FP32 for Maxwell cards)
 * VRAM: Large models (yolov8x-seg.pt) may require >3–4GB. Consider smaller models (yolov8n, yolov8m) for 4GB GPUs.

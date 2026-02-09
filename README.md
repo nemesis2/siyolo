@@ -6,64 +6,63 @@ A lightweight, locally-hosted YOLO server written in Python using FastAPI.
 
 Supports CPU, Maxwell GPUs (GTX 970/980), modern NVIDIA GPUs (RTX 30/40), and Windows/Linux environments.
 
-Made as a drop-in replacement for Deepstacks or Codeproject.AI inference servers.
+Made as a drop-in replacement for Deepstacks or Codeproject.AI inference servers for YOLO models.
+    
+---
 
 ## Linux Installation & Setup Guide
 
-1)  Directory Setup
+### Directory Setup
 
-    Create the server and model directories:
+Create the server and model directories:
 ```
 sudo mkdir -p /opt/siyolo/models
 cd /opt/siyolo
 ```
 
 
-2) Python Virtual Environment
+### Install Python Virtual Environment
 
-  ⚠ Linux: Use Python 3.10 for older CPUs/Maxwell GPUs. Windows can use Python 3.10–3.12.
+⚠ Linux: Use Python 3.10 for older CPUs/Maxwell GPUs. Windows can use Python 3.10–3.12.
 ```   
 python3 -m venv ./venv
-source ./venv/bin/activate   # Linux/macOS
+source ./venv/bin/activate
 pip install --upgrade pip
 ```
 
-3) Install Requirements
+### Python Package Requirements
 
-  a) Modern GPUs / New CPUs (CUDA 12.1+)
+⚠ Linux: The correct combination may vary depending on CPU/GPU and distribution.
+
+Modern GPUs / New CPUs (CUDA 12.1+)
   
-  ```
-    pip install torch torchvision numpy ultralytics fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu121
-  ```
-
-b) Maxwell GPUs (GTX 970 / 980, CUDA 11.7)
-
 ```
-  pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy ultralytics==8.0.200 fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
+pip install torch torchvision numpy ultralytics fastapi uvicorn opencv-python python-multipart \
+--index-url https://download.pytorch.org/whl/cu121
 ```
 
-c) Older CPUs (no AVX2 / AVX512)
+Maxwell GPUs (GTX 970 / 980, CUDA 11.7)
 
 ```
-pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy==1.24.4 ultralytics==8.0.200 fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy ultralytics==8.0.200 fastapi uvicorn \
+opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
 ```
 
-4) Extract Server Files
+Older CPUs (no AVX2 / AVX512)
 
-If you have a tarball:
+```
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy==1.24.4 ultralytics==8.0.200 \
+fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
+```
 
-tar -xzvf siyolo.tar.gz -C /opt/siyolo
-
-5) Create System User (Linux Only)
+### Create System User (Linux Only)
 
 ```
 sudo useradd -r siyolo
 sudo chown -R siyolo:siyolo /opt/siyolo
 ```
 
-Server runs under a dedicated user for security.
-
-6) Configure systemd Service (Linux Only)
+### Configure systemd Service 
 
 Create /opt/siyolo/siyolo.service:
 
@@ -82,10 +81,12 @@ Restart=always
 RestartSec=5
 
 # Environment
-Environment="TMPDIR=/dev/shm"
-Environment="PYTHONUNBUFFERED=1"
-Environment="YOLO_MODEL=yolov8x.pt"
-Environment="YOLO_VERBOSE=False"
+Environment=MPLCONFIGDIR=/opt/siyolo/.config/matplotlib
+Environment=YOLO_CONFIG_DIR=/opt/siyolo/.config/Ultralytics
+Environment=TMPDIR=/dev/shm
+Environment=PYTHONUNBUFFERED=1
+Environment=YOLO_MODEL=yolov8x.pt
+Environment=YOLO_VERBOSE=False
 
 # Prevent CPU oversubscription
 Environment=OMP_NUM_THREADS=1
@@ -103,7 +104,7 @@ ProtectHome=true
 WantedBy=multi-user.target
 ```
 
-Enable and start:
+### Enable and start:
 
 ```
 sudo ln -s /opt/siyolo/siyolo.service /etc/systemd/system/siyolo.service
@@ -113,7 +114,7 @@ sudo systemctl start siyolo
 sudo systemctl status siyolo
 ```
 
-7) Testing the Server (Linux & Windows)
+### Testing the Server (Linux & Windows)
 
 Activate venv and run manually first:
 

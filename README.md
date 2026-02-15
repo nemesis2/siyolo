@@ -1,5 +1,3 @@
-A simple, fast, locally-hosted YOLO inference server — no Docker, no .NET, just Python.
-
 # siyolo: A Simple YOLO Inference Server 
 
 ## Overview

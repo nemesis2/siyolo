@@ -1,12 +1,30 @@
+A simple, fast, locally-hosted YOLO inference server — no Docker, no .NET, just Python.
+
 # siyolo: A Simple YOLO Inference Server 
 
 ## Overview
 
-A lightweight, locally-hosted YOLO server written in Python using FastAPI.
+A lightweight, locally-hosted Ultralytics YOLO inference server written in Python using FastAPI.
 
-Supports CPU, Maxwell GPUs (GTX 970/980), modern NVIDIA GPUs (RTX 30/40), and Windows/Linux environments.
+siyolo was designed as a drop-in replacement for DeepStack and CodeProject.AI,  
+providing fast local object detection without heavyweight AI frameworks or runtime environments.
 
-Made as a drop-in replacement for Deepstacks or Codeproject.AI inference servers for YOLO models.
+Simple, fast and locally-hosted. No Docker, no .NET needed, just Python.  
+A Single-process, LAN-focused inference server for local object detection workloads.
+
+---
+
+* Suitable for NVR and home automation
+* Minimal dependencies (no .NET or Docker required)
+* Fast startup with CUDA warm-up
+* Automatic FP16 detection (Volta+ GPUs)
+* Supports CPU and CUDA (Linux and Windows)
+* Defensive filtering of NaN / invalid detections
+* DeepStack-compatible REST API
+* Optimized for low-memory environments
+* Ultralytics YOLO backend + FastAPI
+* Supports multipart/form-data and application/json (base64)
+
     
 ---
 
@@ -21,7 +39,7 @@ sudo git clone https://github.com/nemesis2/siyolo.git
 
 ### Directory Setup
 
-Create the server and model directories:
+Create the model directory:
 ```
 sudo mkdir -p /opt/siyolo/models
 cd /opt/siyolo
@@ -122,9 +140,11 @@ python3.10 main.py
 Expected output should be similar to:
 
 ```
-Starting Simple YOLO server v1.0, listening on 127.0.0.1:32168
-Torch version: 1.13.1+cu117 (CUDA: 11.7)
-Running model yolov8x.pt on CUDA (NVIDIA GeForce GTX 970)
+Simple YOLO inference server starting...
+Using Torch version: 1.13.1+cu117 (CUDA: 11.7)
+Running model yolov8x.pt on CUDA device 0 (NVIDIA GeForce GTX 970, compute 5.2/sm_52) using FP32 precision
+Total GPU Memory: 4036.75 MiB, Allocated: 534.74 MiB, Reserved: 706.00 MiB
+Simple YOLO inference server v1.2-dev ready and listening on 127.0.0.1:32168
 ```
 
 ### Verify Inferencing
@@ -140,6 +160,8 @@ Should return something like:
 ```jsonc
 {
   "success": true,
+  "count": 3,
+  "inferenceMs": 74,  
   "predictions": [
     {
       "confidence": 0.9401,
@@ -165,9 +187,7 @@ Should return something like:
       "x_max": 601,
       "y_max": 523
     }
-  ],
-  "count": 3,
-  "inferenceMs": 74
+  ]
 }
 ```
 
@@ -184,13 +204,13 @@ sudo systemctl status siyolo
 
 ---
 
-## Notes & Tips
+## Notes
 
-* Use curl or your client to POST images for inference.
-* Supports multipart/form-data and application/json (base64).
-* Models: Place YOLO .pt files in /opt/siyolo/models/; if missing it will attempt to automatically download the model.
-* CPU Display: Falls back to system CPU if no CUDA.
-* FP16: Use half=True on CUDA for lower VRAM usage. (Keep FP32 for Maxwell cards)
-* VRAM: Large models (yolov8x-seg.pt) may require >3–4GB. Consider smaller models (yolov8n, yolov8m) for 4GB GPUs.
-* Additional debugging controlled via YOLO_VERBOSE=True/False.
+⚠ This server does not implement authentication, rate limiting,
+or request throttling. Do not expose directly to the public Internet.
+
+* Default inference size: 640x640 (configurable in main.py)
+* Place YOLO .pt files in /opt/siyolo/models/; if missing system will attempt to download automatically
+* Fails over to system CPU if no CUDA present
+* Additional debugging controlled via YOLO_VERBOSE=True/False
 

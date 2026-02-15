@@ -17,8 +17,6 @@ Restart=always
 RestartSec=5
 
 Nice=-1
-CPUAffinity=3
-CPUQuota=100%
 
 Environment=TMPDIR=/dev/shm
 Environment=PYTHONUNBUFFERED=1

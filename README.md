@@ -8,7 +8,7 @@ siyolo was designed as a drop-in replacement for DeepStack and CodeProject.AI,
 providing fast local object detection without heavyweight AI frameworks or runtime environments.
 
 Simple, fast and locally-hosted. No Docker, no .NET needed, just Python.  
-A Single-process, LAN-focused inference server for local object detection workloads.
+A single-process, LAN-focused inference server for local object detection workloads.
 
 ---
 

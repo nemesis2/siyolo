@@ -204,8 +204,7 @@ sudo systemctl status siyolo
 
 ## Notes
 
-⚠ This server does not implement authentication, rate limiting,
-or request throttling. Do not expose directly to the public Internet.
+⚠ This server does not implement authentication, rate limiting or request throttling. Do not expose directly to the public Internet. ⚠ 
 
 * Default inference size: 640x640 (configurable in main.py)
 * Place YOLO .pt files in /opt/siyolo/models/; if missing system will attempt to download automatically

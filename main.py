@@ -4,7 +4,7 @@
 # A drop in replacement for DeepStack AI and/or CodeProject.AI running YOLO models
 #
 # https://github.com/nemesis2/siyolo
-# Released under the MIT License, see included LICENSE.txt
+# Released under the MIT License, see included LICENSE
 # Last Updated: 2026-02-14 -- By nemesis2
 
 # Server configuration

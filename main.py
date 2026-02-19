@@ -5,7 +5,7 @@
 #
 # https://github.com/nemesis2/siyolo
 # Released under the MIT License, see included LICENSE
-# Last Updated: 2026-02-14 -- By nemesis2
+# Last Updated: 2026-02-19 -- By nemesis2
 
 # Server configuration
 SERVER_LISTEN = "127.0.0.1"		# ip address(es) to bind to
@@ -15,7 +15,7 @@ MINIMUM_CONFIDENCE = 0.65		# default confidence if not set in post
 YOLO_VERBOSE = False			# Show YOLO output and other errors, True or False (note caps)
 UVICORN_LOG = "warning"			# uvicorn log level
 CUDA_HALF = True				# Use FP16 if on CUDA (Set to False if compute less than 7.0)
-VERSION = "v1.2"				# siyolo version
+VERSION = "v1.3"				# siyolo version
 IMG_SZ = 640					# Default image size to inference
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024	# 10MB Max image size
@@ -25,6 +25,7 @@ from fastapi.responses import Response
 from pathlib import Path
 from ultralytics import YOLO
 from contextlib import asynccontextmanager
+from math import isfinite
 
 import torch
 import numpy as np
@@ -32,17 +33,16 @@ import cv2
 import base64
 import os
 import time
-import math
 import json
 
 # CUDA / GPU Detection
 if torch.cuda.is_available():
 	device = "cuda"
 	use_fp16 = False # Default to FP32
+	major, minor = torch.cuda.get_device_capability()
 	if CUDA_HALF: # if user wants fp16, check 
 		# Check compute capability
-		major, minor = torch.cuda.get_device_capability()
-		if major >= 7.0:# Require Volta (7.0) or newer
+		if major >= 7:# Require Volta (7) or newer
 			try: # Runtime validation test
 				cuda_device = torch.device(device)
 				x = torch.randn(16, 16, device=cuda_device, dtype=torch.float16)
@@ -57,6 +57,7 @@ if torch.cuda.is_available():
 			print("FP16 requested but compute capability < 7.0 — using FP32")
 else:
 	device = "cpu"
+	major = minor = -1
 	use_fp16 = False  # CPU must stay fp32
 	
 CUDA_HALF = use_fp16	
@@ -92,19 +93,17 @@ def get_cpu_name():
 async def lifespan(app: FastAPI):
 	# startup
 	print(f"Using Torch version: {torch.__version__} (CUDA: {torch.version.cuda})")
+	fp = "32"
 	if device == "cuda":
-		fp = "32"
 		if use_fp16:
-			fp = "16"
+			fp = "16"		
 		device_name = torch.cuda.get_device_name(0)
 		print(f"Running model {MODEL_NAME} on {device.upper()} device 0 "
 			f"({device_name}, compute {major}.{minor}/sm_{major}{minor}) using FP{fp} precision")
 		dummy = np.zeros((IMG_SZ, IMG_SZ, 3), dtype=np.uint8) # "warm up" the inference to avoid "lazy loading"
 		with torch.inference_mode():
 			for _ in range(2): # run twice for stability
-				_ = model(dummy, imgsz=IMG_SZ, half=CUDA_HALF, verbose=False)
-		torch.cuda.synchronize()
-		_ = torch.zeros((1, 3, IMG_SZ, IMG_SZ), device="cuda") # prealloc a tensor/allocator pools
+				model(dummy, imgsz=IMG_SZ, half=CUDA_HALF, verbose=False)
 		torch.cuda.synchronize()
 		props = torch.cuda.get_device_properties(0)
 		mem_allocated_device_0 = torch.cuda.memory_allocated(0)
@@ -115,9 +114,10 @@ async def lifespan(app: FastAPI):
 		torch.backends.cudnn.benchmark = True
 	else:
 		device_name = get_cpu_name()
+		print(f"Running model {MODEL_NAME} on {device.upper()} ({device_name}), using FP{fp} precision")
 		dummy = np.zeros((IMG_SZ, IMG_SZ, 3), dtype=np.uint8) # warm up
 		with torch.inference_mode():
-			_ = model(dummy, imgsz=IMG_SZ, verbose=False)
+			model(dummy, imgsz=IMG_SZ, verbose=False)
 	print(f"Simple YOLO inference server {VERSION} ready and listening on {SERVER_LISTEN}:{SERVER_PORT}")
 
 	yield  # here FastAPI runs
@@ -208,40 +208,45 @@ async def detect(
 	predictions = []
 	h, w = img.shape[:2]
 
+	names = model.names
 	for box in results.boxes:
 		conf = float(box.conf[0])
 
 		# YOLO occasionally emits NaN confidences (FP16 + Maxwell)
 		# So we add sanity/bounds checks:
-		if not math.isfinite(conf) or conf < 0.001:
+		if not isfinite(conf) or conf < 0.001:
 			continue
 		if conf < min_confidence or conf > 1.0:
 			continue
 
 		# convert and check bounding box coords
-		x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
-		if not all(map(math.isfinite, (x_min, y_min, x_max, y_max))):
+		raw = box.xyxy[0].tolist()  # floats
+		if not all(map(isfinite, raw)):
 			continue
-		if x_max <= x_min or y_max <= y_min:
-			continue
+		x_min, y_min, x_max, y_max = (int(v) for v in raw)
 
-		# verify they are within the size of the image itself
-		if x_min < 0 or y_min < 0 or x_max > w or y_max > h:
+		# clamp instead of reject due to possible YOLO padding artifacts
+		x_min = max(0, x_min)
+		y_min = max(0, y_min)
+		x_max = min(w, x_max)
+		y_max = min(h, y_max)
+		
+		if x_max <= x_min or y_max <= y_min:
 			continue
 
 		# verify class id is sane
 		cls_id = int(box.cls[0])
-		if cls_id < 0 or cls_id >= len(model.names):
+		if cls_id < 0 or cls_id >= len(names):
 			continue
 
 		# we got this far, add it to the return list
 		predictions.append({
 			"confidence": round(conf, 4),
-			"label": model.names[cls_id],
-			"x_min": int(x_min),
-			"y_min": int(y_min),
-			"x_max": int(x_max),
-			"y_max": int(y_max)
+			"label": names[cls_id],
+			"x_min": x_min,
+			"y_min": y_min,
+			"x_max": x_max,
+			"y_max": y_max
 		})
 
 	if YOLO_VERBOSE:

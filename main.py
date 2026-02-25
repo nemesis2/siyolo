@@ -70,6 +70,7 @@ def detect_cuda():
                     cuda_device = torch.device("cuda")
                     x = torch.randn(16, 16, device=cuda_device, dtype=torch.float16)
                     y = torch.matmul(x, x)
+                    torch.cuda.synchronize()  # matmul result may not be ready on some drivers
                     _ = y.sum().item()
                     use_fp16 = True
                 except Exception:
@@ -125,14 +126,11 @@ def run_inference_sync(app, img, min_confidence):
 
     for row in data:
         x_min, y_min, x_max, y_max, conf, cls_id = row  # Note: Assuming column order from YOLO model
-    
         # Boundary checks
         x_min, y_min = max(0, int(x_min)), max(0, int(y_min))
-        x_max, y_max = min(w - 1, int(x_max)), min(h - 1, int(y_max))
-    
+        x_max, y_max = min(w, int(x_max)), min(h, int(y_max))
         if x_max <= x_min or y_max <= y_min:
             continue
-        
         cls_id = int(cls_id)
         if 0 <= cls_id < names_count:
             predictions.append({
@@ -185,7 +183,7 @@ async def lifespan(app: FastAPI):
               f"({device_name}, compute {major}.{minor}/sm_{major}{minor}) using FP{fp} precision")
 
         # Warm-up
-        dummy = np.zeros((IMG_SZ_X, IMG_SZ_Y, 3), dtype=np.uint8)
+        dummy = np.zeros((IMG_SZ_Y, IMG_SZ_X, 3), dtype=np.uint8)
         with torch.inference_mode():
             for _ in range(2):
                 app.state.model(dummy, imgsz=(IMG_SZ_X, IMG_SZ_Y), half=use_fp16, verbose=False)
@@ -201,7 +199,7 @@ async def lifespan(app: FastAPI):
     else:
         device_name = get_cpu_name()
         logger.info(f"Running model {MODEL_NAME} @ {IMG_SZ_X}x{IMG_SZ_Y}px on {device.upper()} ({device_name}), using FP{fp} precision")
-        dummy = np.zeros((IMG_SZ_X, IMG_SZ_Y, 3), dtype=np.uint8)
+        dummy = np.zeros((IMG_SZ_Y, IMG_SZ_X, 3), dtype=np.uint8)
         with torch.inference_mode():
             app.state.model(dummy, imgsz=(IMG_SZ_X, IMG_SZ_Y), verbose=False)
 
@@ -234,7 +232,7 @@ async def detect(
         raise HTTPException(status_code=503, detail="Model not loaded yet")
 
     if not (0.0 <= min_confidence <= 1.0):
-        logger.error(f"min_confidence must be between 0.0 and 1.0")
+        logger.error("min_confidence must be between 0.0 and 1.0")
         raise HTTPException(status_code=400, detail="min_confidence must be between 0.0 and 1.0")
 
     raw_data = None
@@ -244,7 +242,7 @@ async def detect(
         try:
             raw_data = await image.read()
             if not raw_data or len(raw_data) > MAX_IMAGE_BYTES:
-                logger.error(f"Invalid or oversized image")
+                logger.error("Invalid or oversized image")
                 raise HTTPException(status_code=400, detail="Invalid or oversized image")
         except HTTPException:
             raise
@@ -262,18 +260,18 @@ async def detect(
             try:
                 min_confidence = float(body_json.get("min_confidence", min_confidence))
             except (TypeError, ValueError):
-                logger.error(f"min_confidence must be between 0.0 and 1.0")
+                logger.error("min_confidence must be between 0.0 and 1.0")
                 raise HTTPException(status_code=400, detail="Invalid min_confidence")
                 
             if not (0.0 <= min_confidence <= 1.0):
-                logger.error(f"min_confidence must be between 0.0 and 1.0")
+                logger.error("min_confidence must be between 0.0 and 1.0")
                 raise HTTPException(status_code=400, detail="min_confidence must be between 0.0 and 1.0")
             img_b64 = body_json["image"]
             if img_b64.startswith("data:"):
                 img_b64 = img_b64.split(",", 1)[1]
             raw_data = base64.b64decode(img_b64, validate=True)
             if not raw_data or len(raw_data) > MAX_IMAGE_BYTES:
-                logger.error(f"Invalid or oversized image")
+                logger.error("Invalid or oversized image")
                 raise HTTPException(status_code=400, detail="Invalid or oversized image")
                 
         except HTTPException:
@@ -283,7 +281,7 @@ async def detect(
             logger.error(f"JSON decode error: {e}")
             raise HTTPException(status_code=400, detail=f"JSON decode error: {e}")
     else:
-        logger.error(f"No image provided / Invalid Content-Type")
+        logger.error("No image provided / Invalid Content-Type")
         raise HTTPException(status_code=400, detail="No image provided / Invalid Content-Type")
 
     # Decode image in a separate thread to prevent event loop blocking

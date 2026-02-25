@@ -7,7 +7,7 @@
 # Released under the MIT License, see included LICENSE
 # Last Updated: 2026-02-24 -- By nemesis2
 
-VERSION = "v1.5-dev" 
+VERSION = "v1.5" 
 
 # Server configuration
 import os

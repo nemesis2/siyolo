@@ -7,7 +7,7 @@
 # Released under the MIT License, see included LICENSE
 # Last Updated: 2026-02-24 -- By nemesis2
 
-VERSION = "v1.5" 
+VERSION = "v1.5-dev" 
 
 # Server configuration
 import os
@@ -21,7 +21,7 @@ YOLO_VERBOSE = os.environ.get("YOLO_VERBOSE", "False").lower() == "true"        
 UVICORN_LOG = os.environ.get("UVICORN_LOG", "warning")                                   # uvicorn log level (warning)
 CUDA_HALF = os.environ.get("CUDA_HALF", "True").lower() == "true"                        # Use FP16 if on CUDA (True, Set to False if compute < 7)
 
-IMG_SZ_X = int(os.environ.get("IMG_SZ_X", 640))                                         # image size to inference (default 640)
+IMG_SZ_X = int(os.environ.get("IMG_SZ_X", 640))                                          # image size to inference (default 640)
 IMG_SZ_Y = int(os.environ.get("IMG_SZ_Y", 480))                                          # 480; must be a multiple of 32!
 MAX_IMAGE_BYTES = int(os.environ.get("MAX_IMAGE_BYTES", 10 * 1024 * 1024))               # 10MB Max image size
 
@@ -115,8 +115,6 @@ def run_inference_sync(app, img, min_confidence):
     
     # Fast vectorized filtering using the raw tensor data [x1, y1, x2, y2, conf, cls]
     boxes = results.boxes
-
-    #if boxes is None or boxes.data is None or len(boxes.data) == 0:
     if boxes is None or boxes.data.shape[0] == 0:
         return predictions, inference_ms
 

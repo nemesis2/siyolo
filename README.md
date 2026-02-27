@@ -60,7 +60,7 @@ pip install --upgrade pip
 Modern GPUs / New CPUs (CUDA 12.1+)
   
 ```
-pip install torch torchvision numpy ultralytics fastapi uvicorn opencv-python python-multipart \
+pip install torch torchvision numpy ultralytics fastapi uvicorn opencv-python python-multipart orjson \
 --index-url https://download.pytorch.org/whl/cu121
 ```
 
@@ -68,14 +68,14 @@ Maxwell GPUs (GTX 970 / 980, CUDA 11.7)
 
 ```
 pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy ultralytics==8.0.200 fastapi uvicorn \
-opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
+opencv-python python-multipart orjson --index-url https://download.pytorch.org/whl/cu117
 ```
 
 Older CPUs (no AVX2 / AVX512)
 
 ```
 pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 numpy==1.24.4 ultralytics==8.0.200 \
-fastapi uvicorn opencv-python python-multipart --index-url https://download.pytorch.org/whl/cu117
+fastapi uvicorn opencv-python python-multipart orjson --index-url https://download.pytorch.org/whl/cu117
 ```
 
 ### Create System User
